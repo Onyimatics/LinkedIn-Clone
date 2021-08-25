@@ -1,0 +1,7 @@
+{
+  "name": "linkedIn",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
