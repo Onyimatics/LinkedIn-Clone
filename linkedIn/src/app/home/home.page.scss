@@ -1,5 +1,8 @@
 :host {
-  justify-content: start;
+  display: flex;
+  justify-content: flex-start;
+  min-height: 100vh;
+  flex-direction: column;
 }
 
 
@@ -7,6 +10,12 @@
   display: flex;
   width: 1128px;
   margin: 40px auto;
+
+  @media(max-width: 1200px) {
+    width: auto;
+    justify-content: center;
+    margin-top: 0;
+  }
 }
 
 app-all-posts, .post-divider {
@@ -16,4 +25,8 @@ app-all-posts, .post-divider {
 .post-divider {
   padding-top: 8px;
   margin: 0 12px;
+}
+
+app-tabs {
+  margin-top: auto;
 }
