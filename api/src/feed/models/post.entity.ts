@@ -1,17 +1,28 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn} from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { UserEntity } from '../../auth/models/user.entity';
+import { CommentEntity } from '../../comment/models/comment.entity';
 
 @Entity('feed_post')
 export class FeedPostEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ default: '' })
-    body: string;
+  @Column({ default: '' })
+  body: string;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    // @UpdateDateColumn()
-    // updatedAt: Date;
+  @ManyToOne(() => UserEntity, (userEntity) => userEntity.feedPosts)
+  author: UserEntity;
 
+  // @OneToMany(() => CommentEntity, (commentEntity) => commentEntity.post)
+  // comments: CommentEntity[];
 }
