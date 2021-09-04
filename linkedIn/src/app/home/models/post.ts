@@ -1,7 +1,8 @@
+import {User} from '../../auth/models/user.model';
+
 export interface Post {
-  userId: number;
   id: number;
-  title: string;
   body: string;
   createdAt: Date;
+  author: User;
 }

@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {NgForm} from '@angular/forms';
 import {ModalController} from '@ionic/angular';
 
@@ -10,15 +10,17 @@ import {ModalController} from '@ionic/angular';
 export class ModalComponent implements OnInit {
   @ViewChild('form') form: NgForm;
 
+  @Input() postId?: string;
+
   constructor(
     public modalController: ModalController
   ) { }
 
   ngOnInit() {}
 
-  onPost(form: NgForm) {
-    if (!form.valid) return;
-    const body = this.form.value['body'];
+  onPost() {
+    if (!this.form.valid) {return;}
+    const body = this.form.value.body;
     this.modalController.dismiss({
       post: {
         body,
