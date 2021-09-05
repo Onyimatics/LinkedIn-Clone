@@ -24,8 +24,9 @@ import { IsCreatorGuard } from '../guards/is-creator.guard';
 export class FeedController {
   constructor(private feedService: FeedService) {}
 
-  @Roles(Role.ADMIN, Role.PREMIUM)
-  @UseGuards(JwtGuard, RolesGuard)
+  // @Roles(Role.ADMIN, Role.PREMIUM)
+  // @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtGuard)
   @Post()
   create(@Body() feedPost: FeedPost, @Request() req): Observable<FeedPost> {
     return this.feedService.createPost(req.user, feedPost);
