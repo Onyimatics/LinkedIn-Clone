@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { from, map, Observable } from 'rxjs';
+import {from, map, Observable, of, switchMap} from 'rxjs';
 import { User } from '../models/user.class';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from '../models/user.entity';
 import { Repository, UpdateResult } from 'typeorm';
+import {FriendRequest, FriendRequest_Status, FriendRequestStatus} from '../models/friend-request.interface';
+import {FriendRequestEntity} from '../models/friend-request.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(FriendRequestEntity)
+    private readonly friendRequestRepository: Repository<FriendRequestEntity>,
   ) {}
 
   findUserById(id: number): Observable<User> {
@@ -40,4 +44,98 @@ export class UserService {
       }),
     );
   }
+
+  hasRequestBeenSentOrReceived(
+    creator: User,
+    receiver: User,
+  ): Observable<boolean> {
+    return from(
+      this.friendRequestRepository.findOne({
+        where: [
+          { creator, receiver },
+          { creator: receiver, receiver: creator },
+        ],
+      }),
+    ).pipe(
+      switchMap((friendRequest: FriendRequest) => {
+        if (!friendRequest) return of(false);
+        return of(true);
+      }),
+    );
+  }
+
+  sendFriendRequest(
+      receiverId: number,
+      creator: User,
+  ): Observable<FriendRequest | { error: string }> {
+    if (receiverId === creator.id)
+      return of({ error: 'It is not possible to add yourself!' });
+
+    return this.findUserById(receiverId).pipe(
+        switchMap((receiver: User) => {
+          return this.hasRequestBeenSentOrReceived(creator, receiver).pipe(
+              switchMap((hasRequestBeenSentOrReceived: boolean) => {
+                if (hasRequestBeenSentOrReceived)
+                  return of({
+                    error:
+                        'A friend request has already been sent of received to your account!'
+                  });
+                let friendRequest: FriendRequest = {
+                  creator,
+                  receiver,
+                  status: 'pending',
+                };
+                return from(this.friendRequestRepository.save(friendRequest));
+              }),
+          );
+        }),
+    );
+  }
+
+  getFriendRequestStatus(receiverId, currentUser): Observable<FriendRequestStatus> {
+    return this.findUserById(receiverId).pipe(
+        switchMap((receiver: User) => {
+          return from(this.friendRequestRepository.findOne({
+            creator: currentUser,
+            receiver
+          }))
+        }),
+        switchMap((friendRequest: FriendRequest) => {
+          return of({ status: friendRequest.status })
+        })
+    )
+  }
+
+    getFriendRequestUserById(friendRequestId: number): Observable<FriendRequest> {
+      return from(this.friendRequestRepository.findOne({
+          where: [{ id: friendRequestId }],
+      }))
+  }
+
+    respondToFriendRequest(
+        statusResponse: FriendRequest_Status,
+        friendRequestId: number,
+    ): Observable<FriendRequestStatus> {
+        return this.getFriendRequestUserById(friendRequestId).pipe(
+            switchMap((friendRequest: FriendRequest) => {
+                return from(
+                    this.friendRequestRepository.save({
+                        // take everything from friend request
+                        ...friendRequest,
+                        status: statusResponse,
+                    }),
+                );
+            }),
+        );
+    }
+
+    getFriendRequestsFromRecipients(
+        currentUser: User,
+    ): Observable<FriendRequest[]> {
+        return from(
+            this.friendRequestRepository.find({
+                where: [{ receiver: currentUser }],
+            }),
+        );
+    }
 }
