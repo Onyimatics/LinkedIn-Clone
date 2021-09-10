@@ -33,7 +33,7 @@ export class UserService {
 
   findImageNameByUserId(id: number): Observable<string> {
     return from(this.userRepository.findOne({ id })).pipe(
-      // convert the observable into a string by using the map method
+      // convert the observable into a string/stream by using the map method
       map((user: User) => {
         delete user.password;
         return user.imagePath;

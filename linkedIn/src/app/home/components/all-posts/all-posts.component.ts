@@ -1,18 +1,19 @@
-import {Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
+import {Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {PostService} from '../../services/post.service';
 import {IonInfiniteScroll, ModalController} from '@ionic/angular';
 import {Post} from '../../models/post';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, Subscription} from 'rxjs';
 import {AuthService} from '../../../auth/services/auth.service';
 import {take} from 'rxjs/operators';
 import {ModalComponent} from '../start-post/modal/modal.component';
+import {User} from '../../../auth/models/user.model';
 
 @Component({
   selector: 'app-all-posts',
   templateUrl: './all-posts.component.html',
   styleUrls: ['./all-posts.component.scss'],
 })
-export class AllPostsComponent implements OnInit, OnChanges {
+export class AllPostsComponent implements OnInit, OnChanges, OnDestroy {
 
   @ViewChild(IonInfiniteScroll) infiniteScroll: IonInfiniteScroll;
 
@@ -25,6 +26,8 @@ export class AllPostsComponent implements OnInit, OnChanges {
 
   userId$ = new BehaviorSubject<number>(null);
 
+  private userSubscription: Subscription;
+
   constructor(
     private postService: PostService,
     private authService: AuthService,
@@ -33,6 +36,15 @@ export class AllPostsComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
+    this.userSubscription = this.authService.userStream.subscribe(
+      (user: User) => {
+        this.allLoadedPosts.forEach((post: Post, index: number) => {
+          if(user?.imagePath && post?.author?.id === user?.id) {
+            this.allLoadedPosts[index]['fullImagePath'] = this.authService.getFullImagePath(user?.imagePath);
+          }
+        });
+      }
+    );
     this.getPosts(false, '');
 
     this.authService.userId.pipe(take(1))
@@ -47,7 +59,11 @@ export class AllPostsComponent implements OnInit, OnChanges {
       return;
     }
     this.postService.createPost(postBody).subscribe((post: Post) => {
-      this.allLoadedPosts.unshift(post);
+      this.authService.userFullImagePath.pipe(take(1))
+        .subscribe((fullImagePath: string) => {
+          post['fullImagePath'] = fullImagePath;
+          this.allLoadedPosts.unshift(post);
+        });
     });
   };
 
@@ -57,8 +73,17 @@ export class AllPostsComponent implements OnInit, OnChanges {
     }
     this.queryParams = `?take=${this.numberOfPosts}&skip=${this.skipPosts}`;
     this.postService.getSelectedPost(this.queryParams).subscribe((posts: Post[]) => {
-        for (let post = 0; post < posts?.length; post++) {
-          this.allLoadedPosts.push(posts[post]);
+        for (let postIndex = 0; postIndex < posts?.length; postIndex++) {
+          const doesAuthorHaveImage = !!posts[postIndex]?.author?.imagePath;
+          let fullImagePath = this.authService.getDefaultFullImagePath();
+          if(doesAuthorHaveImage) {
+            fullImagePath = this.authService.getFullImagePath(
+              posts[postIndex]?.author?.imagePath
+            );
+          }
+
+          posts[postIndex]['fullImagePath'] = fullImagePath;
+          this.allLoadedPosts.push(posts[postIndex]);
         }
         if (isInitialLoad) {
           event.target.complete;
@@ -104,5 +129,9 @@ export class AllPostsComponent implements OnInit, OnChanges {
         (post: Post) => post.id !== postId
       );
     });
+  }
+
+  ngOnDestroy() {
+    this.userSubscription.unsubscribe();
   }
 }

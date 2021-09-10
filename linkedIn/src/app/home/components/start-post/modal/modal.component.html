@@ -16,13 +16,13 @@
     <ion-row class="ion-justify-content-start">
       <ion-col size="auto">
         <ion-avatar>
-          <ion-img src="../../../../assets/profile-pix.png"
+          <ion-img *ngIf="userFullImagePath" [src]="userFullImagePath"
           ></ion-img>
         </ion-avatar>
       </ion-col>
       <ion-col>
         <div>
-          <ion-text>Onyinye Ezike</ion-text>
+          <ion-text>{{ fullName }}</ion-text>
         </div>
         <ion-button size="small" shape="round" fill="outline" color="medium">
           <ion-icon color="dark" name="globe-outline"></ion-icon>

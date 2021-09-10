@@ -24,6 +24,10 @@ export class AuthService {
     })
   };
 
+  get userStream(): Observable<User>{
+    return this.user$.asObservable();
+  }
+
   get isUserLoggedIn(): Observable<boolean> {
     return this.user$.asObservable().pipe(
       switchMap((user: User) => {
@@ -45,10 +49,75 @@ export class AuthService {
     );
   }
 
+  get userFullName(): Observable<string> {
+    return this.user$.asObservable().pipe(
+      switchMap((user: User) => {
+        const fullName = user.firstName + ' ' + user.lastName;
+        return of(fullName);
+      })
+    );
+  }
+
+  get userFullImagePath(): Observable<string> {
+    return this.user$.asObservable().pipe(
+      switchMap((user: User) => {
+        const doesAuthorHaveImage = !!user?.imagePath;
+        let fullImagePath = this.getDefaultFullImagePath();
+        if(doesAuthorHaveImage) {
+          fullImagePath = this.getFullImagePath(user?.imagePath);
+        }
+        return of(fullImagePath);
+      })
+    );
+  }
+
   constructor(
     private http: HttpClient,
     private router: Router
   ) {
+  }
+
+  getDefaultFullImagePath(): string {
+    return 'http://localhost:3000/api/feed/image/profile-pix.png';
+  }
+
+  getFullImagePath(imageName: string): string {
+    return 'http://localhost:3000/api/feed/image/' + imageName;
+  }
+
+  getUserImage() {
+    return this.http.get(`${environment.baseApiUrl}/user/image`).pipe(take(1));
+  }
+
+  getUserImageName(): Observable<{ imageName: string }> {
+    return this.http
+      .get<{ imageName: string }>(`${environment.baseApiUrl}/user/image-name`)
+      .pipe(take(1));
+  }
+
+  updateUserImagePath(imagePath: string): Observable<User> {
+    return this.user$.pipe(
+      take(1),
+      map((user: User) => {
+        user.imagePath = imagePath;
+        this.user$.next(user);
+        return user;
+      })
+    );
+  }
+
+  uploadUserImage(formData: FormData): Observable<{ modifiedFileName: string }> {
+    return this.http
+      .post<{ modifiedFileName: string }>(
+        `${environment.baseApiUrl}/user/upload`,
+        formData
+      ).pipe(
+        tap(({ modifiedFileName }) => {
+          const user = this.user$.value;
+          user.imagePath = modifiedFileName;
+          this.user$.next(user);
+        })
+      );
   }
 
   register(newUser: NewUser): Observable<User> {
