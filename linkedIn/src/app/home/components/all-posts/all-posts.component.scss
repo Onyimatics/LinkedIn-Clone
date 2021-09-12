@@ -16,6 +16,12 @@
 
       .full-name {
         font-weight: 500;
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+          color: #499df8;
+        }
       }
 
       .role {
