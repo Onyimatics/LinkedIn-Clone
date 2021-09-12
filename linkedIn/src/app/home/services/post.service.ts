@@ -2,8 +2,9 @@ import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Post} from '../models/post';
 import {environment} from '../../../environments/environment';
-import {take, tap} from 'rxjs/operators';
+import {catchError, take, tap} from 'rxjs/operators';
 import {AuthService} from '../../auth/services/auth.service';
+import {ErrorHandlerService} from '../../shared/error-handler.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +21,7 @@ export class PostService {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
+    private errorHandlerService: ErrorHandlerService
   ) {
     this.authService.getUserImageName().pipe(
       take(1),
@@ -34,7 +36,14 @@ export class PostService {
 
   getSelectedPost(params) {
     const baseUrl = `${environment.baseApiUrl}`;
-    return this.http.get<Post[]>(`${baseUrl}/feed` + params);
+    return this.http.get<Post[]>(`${baseUrl}/feed` + params).pipe(
+      tap((posts: Post[]) => {
+        if(posts.length === 0) {throw new Error('No posts to retrieve');}
+      }),
+      catchError(
+        this.errorHandlerService.handleError<Post[]>('getSelectedPosts', [])
+      )
+    );
     // return this.http.get<Post[]>('https://jsonplaceholder.typicode.com/posts' + params)
   }
 
