@@ -35,7 +35,7 @@ export class AuthPage implements OnInit, OnDestroy {
       return this.authService.login(email, password)
         .subscribe((data) => {
           console.log('User Data');
-          this.router.navigateByUrl('/home').then();
+          this.router.navigateByUrl('/home');
         });
     } else if (this.submissionType === 'join') {
       const {firstName, lastName} = this.form.value;
